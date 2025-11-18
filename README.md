@@ -1,21 +1,18 @@
 # Bit Tag and Export for CI/CD Pipelines
+
 Big Tag and Export to Remote Scope
 
 # GitHub Actions
 
 This task executes `bit ci merge` inside the workspace directory.
 
-*Important*: `bit-tasks/tag-export@v3` requires Bit version `^1.12.45`, if you need to use a lower version, use `bit-tasks/tag-export@v2`.
+_Important_: `bit-tasks/tag-export@v3|v4` requires Bit version `^1.12.45`, if you need to use a lower version, use `bit-tasks/tag-export@v2`.
 
 ## Inputs
 
 ### `ws-dir`
 
 **Optional** The workspace directory path from the root. Default `"Dir specified in Init Task or ./"`.
-
-### `persist`
-
-**Optional** Persist soft tagged components by adding `--persist` flag.
 
 ### `build`
 
@@ -28,6 +25,7 @@ This task executes `bit ci merge` inside the workspace directory.
 ### `increment`
 
 **Optional** Type of increment for versioning. Available options:
+
 - `major` - Major version increment
 - `premajor` - Pre-major version increment
 - `minor` - Minor version increment
@@ -61,17 +59,19 @@ The task detects version keywords in the following order:
 You can specify version keywords using square brackets in either PR labels or PR title:
 
 - `[major]` - Major version increment
-- `[minor]` - Minor version increment  
+- `[minor]` - Minor version increment
 - `[patch]` - Patch version increment (default)
 - `[pre-release:<flag>]` - Pre-release version with custom identifier (e.g., `[pre-release:beta]`, `[pre-release:alpha]`)
 
 ### Examples
 
 **Pull Request Labels:**
+
 - Add a label named `[major]` to trigger a major version bump
 - Add a label named `[pre-release:rc]` to create a release candidate
 
 **Pull Request Title:**
+
 - "Update component with breaking changes [major]"
 - "Add new feature [minor]"
 - "Fix bug [patch]"
@@ -80,6 +80,7 @@ You can specify version keywords using square brackets in either PR labels or PR
 ### Fallback Behavior
 
 If no version keywords are detected in the last merged PR, the task will use the input parameters:
+
 - `increment` parameter (e.g., `major`, `minor`, `patch`)
 - `prerelease-id` parameter for pre-release versions
 
@@ -87,17 +88,17 @@ If no version keywords are detected in the last merged PR, the task will use the
 
 ## Example usage
 
-**Note:** Use `bit-task/init@v2` as a prior step in your action before running `bit-tasks/tag-export@v2`.
+**Note:** Use `bit-task/init@v2` as a prior step in your action before running `bit-tasks/tag-export@v4`.
 
 ```yaml
 name: Test Bit Tag and Export
 on:
   pull_request:
-    branches: 
+    branches:
       - main
     types: [closed]
 permissions:
-  pull-requests: write  # Ensure write permission for pull requests
+  pull-requests: write # Ensure write permission for pull requests
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -113,11 +114,9 @@ jobs:
       - name: Initialize Bit
         uses: bit-tasks/init@v1
         with:
-          ws-dir: '<WORKSPACE_DIR_PATH>'
+          ws-dir: "<WORKSPACE_DIR_PATH>"
       - name: Bit Tag and Export
-        uses: bit-tasks/tag-export@v3
-        with:
-          persist: 'false' # Set to 'true' if you use the soft tag flow
+        uses: bit-tasks/tag-export@v4
 ```
 
 # Contributor Guide
@@ -132,7 +131,7 @@ Go to the GithHub action task directory and build using NCC compiler. For exampl
 npm install
 npm run build
 git commit -m "Update task"
-git tag -a -m "action release" v2 --force
+git tag -a -m "action release" v4 --force
 git push --follow-tags
 ```
 
