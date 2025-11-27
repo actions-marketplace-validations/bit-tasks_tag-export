@@ -7,9 +7,6 @@ inputs:
   ws-dir:
     description: "Workspace json file directory path"
     required: false
-  persist:
-    description: "Persist soft tagged components"
-    required: false
   build:
     description: "Build the components"
     required: false

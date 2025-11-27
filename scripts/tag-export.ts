@@ -75,7 +75,7 @@ function getOverridenVersions(labels?: any[]): string[] {
     });
 }
 
-const run = async (githubToken: string, wsdir: string, persist: boolean, build: boolean, increment: string, prereleaseId: string, incrementBy: number, strict: boolean) => {
+const run = async (githubToken: string, wsdir: string, build: boolean, increment: string, prereleaseId: string, incrementBy: number, strict: boolean) => {
   const version = await getExecOutput("bit -v", [], { cwd: wsdir });
 
   // If the version is lower than 1.12.45, throw an error recommending to downgrade the action version to v2
@@ -134,10 +134,6 @@ const run = async (githubToken: string, wsdir: string, persist: boolean, build: 
     if (prereleaseId) {
       mergeArgs.push(`--prerelease-id`, prereleaseId);
     }
-  }
-
-  if (persist) {
-    mergeArgs.push("--persist");
   }
 
   // Get overridden versions as an array
