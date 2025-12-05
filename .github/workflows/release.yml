@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 4.0.1)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major_version=v$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
+          echo "full_version=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Parse package version
+        id: package
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build action
+        run: pnpm run build
+
+      - name: Create release archive
+        run: |
+          mkdir -p release-assets
+          tar -czf release-assets/tag-export-${{ steps.version.outputs.version }}.tar.gz dist/ action.yml README.md
+
+      - name: Delete existing major version release
+        continue-on-error: true
+        run: |
+          gh release delete ${{ steps.version.outputs.major_version }} --yes || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit built files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -f dist/
+          git commit -m "Build dist for release ${{ steps.version.outputs.full_version }}" || exit 0
+
+      - name: Create/Update major version tag
+        run: |
+          git tag -fa ${{ steps.version.outputs.major_version }} -m "Release ${{ steps.version.outputs.major_version }}"
+          git push origin ${{ steps.version.outputs.major_version }} --force
+
+      - name: Create GitHub release for major version
+        run: |
+          gh release create ${{ steps.version.outputs.major_version }} \
+            --title "${{ steps.version.outputs.major_version }}" \
+            --notes "Major version release ${{ steps.version.outputs.major_version }} (based on ${{ steps.version.outputs.full_version }})" \
+            release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Major Version Tag**: ${{ steps.version.outputs.major_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package Version**: ${{ steps.package.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage" >> $GITHUB_STEP_SUMMARY
+          echo "Reference this action in your workflows using:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
+          echo "- uses: bit-tasks/tag-export@${{ steps.version.outputs.major_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note**: Only major version tags are created to prevent MODULE_NOT_FOUND errors. Always reference the major version tag (e.g., @${{ steps.version.outputs.major_version }}) in your workflows."
